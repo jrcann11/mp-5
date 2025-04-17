@@ -21,31 +21,40 @@ async function isResolvableURL(url: string): Promise<boolean> {
     }
 }
 
+type CreateAliasResult =
+    | { success: true; data: URLMapping }
+    | { success: false; error: string };
+
 export default async function createAlias(
     alias: string,
-    url: string,
-): Promise<URLMapping> {
+    url: string
+): Promise<CreateAliasResult> {
     if (!isValidURLSyntax(url)) {
-        throw new Error("Invalid URL format");
+        return { success: false, error: "Invalid URL format" };
     }
 
     if (!(await isResolvableURL(url))) {
-        throw new Error("URL does not resolve to an active site");
+        return { success: false, error: "URL does not resolve to an active site" };
     }
 
     const collection = await getCollection(LINKS_COLLECTION);
     const existing = await collection.findOne({ alias });
 
     if (existing) {
-        throw new Error("Alias already taken");
+        return { success: false, error: "Alias already taken" };
     }
 
     const res = await collection.insertOne({ alias, url });
-    if (!res.acknowledged) throw new Error("DB insert failed");
+    if (!res.acknowledged) {
+        return { success: false, error: "DB insert failed" };
+    }
 
     return {
-        id: res.insertedId.toHexString(),
-        alias,
-        url,
+        success: true,
+        data: {
+            id: res.insertedId.toHexString(),
+            alias,
+            url,
+        },
     };
 }

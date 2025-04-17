@@ -38,18 +38,15 @@ export default function URLForm() {
         setShortURL(null);
         setIsLoading(true);
 
-        try {
-            const mapping = await createAlias(alias, url);
-            setShortURL(`${window.location.origin}/${mapping.alias}`);
-        } catch (err: unknown) {
-            if (err instanceof Error) {
-                setError(err.message);
-            } else {
-                setError("An unexpected error occurred.");
-            }
-        } finally {
-            setIsLoading(false);
+        const result = await createAlias(alias, url);
+
+        if (!result.success) {
+            setError(result.error);
+        } else {
+            setShortURL(`${window.location.origin}/${result.data.alias}`);
         }
+
+        setIsLoading(false);
     }
 
     return (
